@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--head部分-->
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" href="/vue/css/element-ui.min.css">
+<link rel="stylesheet" href="/vue/css/fonts/element-icons.woff">
+<link rel="stylesheet" href="/vue/css/enddate.css">
+<script src="/vue/js/vue.min.js"></script>
+<script src="/vue/js/element-ui.min.js"></script>
+<script src="/vue/js/jquery-1.11.0.min.js"></script>
+<body>
+<div id="app">
+    <div style="height: 500px;width: 150px;float: left">
+        <el-steps direction="vertical" :active="active" finish-status="success">
+            <el-step title="选择方案" description="根据填写好的数据库连接的方案信息进行连接数据库">
+            </el-step>
+            <el-step title="科目辅助核算对应关系" description="设置数据库表字段对应关系"></el-step>
+            <el-step title="规则定义" description="根据内置的规则进行核对，设置数据库表字段对应关系，更新sql不可编辑。"></el-step>
+            <el-step title="执行情况" description="执行完成"></el-step>
+        </el-steps>
+        <el-button style="margin-top: 12px;" @click="prev" v-if="active==2||active==3">上一步</el-button>
+        <el-button style="margin-top: 12px;" @click="next" v-if="active==1||active==2||active==3">下一步</el-button>
+        <el-button style="margin-top: 12px;" @click="back" v-if="active==4">返回第一步</el-button>
+    </div>
+    <div style="height: 800px;width: 1000px;float: left">
+        <div v-show="active==1" class="step">
+            <iframe id="plan" align="center" style="height: 700px;width: 1200px" src="/plan/manager" ></iframe>
+        </div>
+        <div v-show="active==2" class="step">
+            <iframe id="acct" align="center" style="height: 800px;width: 1200px" src="/plan/acct" ></iframe>
+        </div>
+        <div v-show="active==3" class="step">
+            <iframe id="rule" align="center" style="height: 800px;width: 1200px" src="/rule/manager" ></iframe>
+        </div>
+        <div v-show="active==4" class="step">
+            <iframe id="finish" align="center" style="height: 700px;width: 1000px" src="/note/finish" ></iframe>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script>
+    new Vue({
+        el:'#app',
+        data() {
+            return {
+                active: 1
+            };
+        },
+
+        methods: {
+            prev(){
+                if (this.active--< 2) this.active = 1;
+            },
+            next() {
+                if (this.active++ > 3) this.active = 1;
+                if (this.active==2){
+                    if($("#plan")[0].contentWindow.getplanid==undefined){
+                        alert("请选择一条方案");
+                        this.active=1;
+                        return;
+                    }
+                }
+                if(this.active==3){
+                    var addForm = parent.$("#acct")[0].contentWindow.apprule2.ruleForm;
+                    if(addForm.mofDivCode==null||addForm.mofDivCode==""||addForm.mofDivCode==undefined){
+                        alert("请填写区划");
+                        this.active=2;
+                        return;
+                    }
+                    if(addForm.agencyCode==null||addForm.agencyCode==""||addForm.agencyCode==undefined){
+                        alert("请填写单位编码");
+                        this.active=2;
+                        return;
+                    }
+                    if($("#plan")[0].contentWindow.getplanid==undefined){
+                        alert("请选择一条方案");
+                        this.active=1;
+                        return;
+                    }else {
+                        $("#rule")[0].contentWindow.findByPlanId($("#plan")[0].contentWindow.getplanid);
+                    }
+                }
+                if(this.active==4){
+                    $("#finish")[0].contentWindow.execute();
+                }
+            },
+            back(){
+                window.location.href="/home";
+            }
+        }
+    })
+</script>

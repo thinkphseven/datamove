@@ -1,0 +1,12 @@
+/*.el-month-table td.start-date .cell{*/
+    /*color: green*/
+/*}*/
+/*.el-month-table td.end-date .cell{*/
+    /*color: red*/
+/*}*/
+.el-month-table td.start-date .cell{
+    background-color: green
+}
+.el-month-table td.end-date .cell{
+    background-color: red
+}

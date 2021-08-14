@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" href="/vue/css/element-ui.min.css">
+<link rel="stylesheet" href="/vue/css/fonts/element-icons.woff">
+<link rel="stylesheet" href="/vue/css/enddate.css">
+<script src="/vue/js/vue.min.js"></script>
+<script src="/vue/js/element-ui.min.js"></script>
+<script src="/vue/js/jquery-1.11.0.min.js"></script>
+<body>
+<div id="app" style="width: 100%">
+    <!--<template>
+        <el-form :model="addForm" ref="addForm" label-width="100px" class="demo-addForm">
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="行政区划" prop="mofDivCode" :rules="[{required: true, message: '必填项', trigger: 'blur' }]">
+                        <el-input v-model="addForm.mofDivCode"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="单位编码" prop="agencyCode" :rules="[{required: true, message: '必填项', trigger: 'blur' }]">
+                        <el-input v-model="addForm.agencyCode"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+        </el-form>
+    </template>-->
+    <template>
+        <el-table
+                ref="multipleTable"
+                :data="tableData"
+                border
+                tooltip-effect="dark"
+                style="width: 100%"
+                @selection-change="handleSelectionChange">
+            <el-table-column label="" width="30">
+                <template scope="scope">
+                    <el-radio :label="scope.$index" v-model="currentRow" @change.native="getCurrentRow(scope.row)" style="color: #fff;"></el-radio>
+                </template>
+            </el-table-column>
+<!--            <el-table-column type="selection" width="30"></el-table-column>-->
+            <el-table-column type="index" width="50" label="编号" ></el-table-column>
+            <el-table-column label="id" width="50" prop="id" v-if="false">
+            </el-table-column>
+            <el-table-column label="方案名称" width="150" prop="name">
+            </el-table-column>
+            <el-table-column label="来源库类型" width="100" prop="sourceDbType">
+            </el-table-column>
+            <el-table-column label="来源库地址" width="220" prop="sourceDbAddr">
+            </el-table-column>
+            <el-table-column label="目标库类型" width="100" prop="targetDbType">
+            </el-table-column>
+            <el-table-column label="目标库地址" width="220" prop="targetDbAddr">
+            </el-table-column>
+            <el-table-column label="创建日期" width="160" prop="createTime">
+            </el-table-column>
+
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button size="mini" @click="handleEdit(scope.$index, scope.row,tableData)">编辑</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </template>
+</div>
+
+
+
+<div id="app2" style="width: 70%;height: 50%">
+    <el-dialog title="方案信息" :visible.sync="dialogFormVisible" :fullscreen="dialogFull" width="70%">
+    <template>
+        <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+            <el-row>
+                <el-col :span="24"><div class="grid-content bg-purple-dark">
+                    <el-form-item label="方案名称" prop="name">
+                        <el-input v-model="ruleForm.name"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="24"><div class="grid-content bg-purple-dark">
+                    <h3>来源库信息</h3>
+                </div></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="数据库" prop="sourceDbType">
+                        <el-select v-model="ruleForm.sourceDbType" placeholder="请选择数据库">
+                            <el-option label="mysql" value="mysql"></el-option>
+                            <el-option label="oracle" value="oracle"></el-option>
+                            <el-option label="postgresql" value="postgresql"></el-option>
+                            <el-option label="sqlserver" value="sqlserver"></el-option>
+                            <el-option label="H2" value="H2"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="ip地址" prop="sourceIp">
+                        <el-input v-model="ruleForm.sourceIp"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="数据库名" prop="sourceDb">
+                        <el-input v-model="ruleForm.sourceDb"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="端口" prop="sourcePort">
+                        <el-input v-model="ruleForm.sourcePort"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="用户名" prop="sourceUsername">
+                        <el-input v-model="ruleForm.sourceUsername"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="密码" prop="sourcePwd">
+                        <el-input v-model="ruleForm.sourcePwd"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+
+
+
+            <el-row>
+                <el-col :span="24"><div class="grid-content bg-purple-dark">
+                    <h3>目标库信息</h3>
+                </div></el-col>
+            </el-row>
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="数据库" prop="targetDbType">
+                        <el-select v-model="ruleForm.targetDbType" placeholder="请选择数据库">
+                            <el-option label="mysql" value="mysql"></el-option>
+                            <el-option label="oracle" value="oracle"></el-option>
+                            <el-option label="postgresql" value="postgresql"></el-option>
+                            <el-option label="sqlserver" value="sqlserver"></el-option>
+                            <el-option label="H2" value="H2"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="ip地址" prop="targetIp">
+                        <el-input v-model="ruleForm.targetIp"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="数据库名" prop="targetDb">
+                        <el-input v-model="ruleForm.targetDb"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="端口" prop="targetPort">
+                        <el-input v-model="ruleForm.targetPort"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="用户名" prop="targetUsername">
+                        <el-input v-model="ruleForm.targetUsername"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="密码" prop="targetPwd">
+                        <el-input v-model="ruleForm.targetPwd"></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('ruleForm')">保存</el-button>
+                <el-button @click="resetForm('ruleForm')">重置</el-button>
+            </el-form-item>
+        </el-form>
+    </template>
+    </el-dialog>
+</div>
+</body>
+</html>
+
+<script>
+    var getplanid;
+    var aVue = new Vue({
+    el:'#app',
+      data() {
+          return {
+              /*addForm: {
+                  mofDivCode: '',
+                  agencyCode: ''
+              },*/
+              currentRow: null,
+              tableData: []
+          }
+      },
+      mounted: function () {
+         this.findAll();
+      },
+      methods: {
+          //查询所有用户信息
+          findAll:function(){
+              $.ajax({
+                  type: "POST",
+                  data: "",
+                  url: "/plan/all",
+                  success: function (result) {
+                      if (result.code == '0') {
+                          aVue.tableData=result.data;
+                      } else {
+                          alert(result.msg);
+                      }
+                  }
+              });
+          },
+          handleSelectionChange(val) {
+              this.multipleSelection = val;
+          },
+          handleEdit(index, row,tableData){
+              app2.ruleForm = row;
+              app2.dialogFormVisible=true;
+          },
+          getCurrentRow(row) {
+              getplanid = row.id;
+          }
+      }
+  })
+</script>
+<script>
+    var app2 =   new Vue({
+        el:'#app2',
+        data() {
+            return {
+                dialogFull:false,
+                dialogFormVisible: false,
+                ruleForm: {
+                    name: '',
+                    sourceDbType: '',
+                    sourceIp: '',
+                    sourcePort: '',
+                    sourceDb: '',
+                    sourceUsername: '',
+                    sourcePwd: '',
+                    targetDbType: '',
+                    targetIp: '',
+                    targetPort: '',
+                    targetDb: '',
+                    targetUsername: '',
+                    targetPwd: ''
+
+                },
+                rules: {
+                    name: [
+                        { required: true, message: '请输入名称', trigger: 'blur' }
+                    ],
+                    sourceDbType: [
+                        { required: true, message: '请选择数据库', trigger: 'change' }
+                    ],
+                    sourceIp: [
+                        { required: true, message: '请输入ip', trigger: 'blur' }
+                    ],
+                    sourcePort: [
+                        { required: true, message: '请输入端口号', trigger: 'blur' }
+                    ],
+                    sourceDb: [
+                        { required: true, message: '请输入数据库名称', trigger: 'blur' }
+                    ],
+                    sourceUsername: [
+                        { required: true, message: '请输入用户名', trigger: 'blur' }
+                    ],
+                    sourcePwd: [
+                        { required: true, message: '请输入密码', trigger: 'blur' }
+                    ],
+                    targetDbType: [
+                        { required: true, message: '请选择数据库', trigger: 'change' }
+                    ],
+                    targetIp: [
+                        { required: true, message: '请输入ip', trigger: 'blur' }
+                    ],
+                    targetPort: [
+                        { required: true, message: '请输入端口号', trigger: 'blur' }
+                    ],
+                    targetDb: [
+                        { required: true, message: '请输入数据库名称', trigger: 'blur' }
+                    ],
+                    targetUsername: [
+                        { required: true, message: '请输入用户名', trigger: 'blur' }
+                    ],
+                    targetPwd: [
+                        { required: true, message: '请输入密码', trigger: 'blur' }
+                    ]
+                }
+            };
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        console.log(app2.ruleForm);
+                        $.ajax({
+                            type: "POST",
+                            data: app2.ruleForm,
+                            url: "/plan/savePlan",
+                            success: function (data) {
+                                if (data.code == '0') {
+                                    alert(data.msg);
+                                    app2.dialogFormVisible=false;
+                                    window.location.href="/plan/manager";
+                                } else {
+                                    alert(data.msg);
+                                }
+                                return false;
+                            }
+                        });
+                    } else {
+                        console.log('error submit!!');
+                        return false;
+                    }
+                });
+            },
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            }
+        }
+    })
+</script>

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" href="/vue/css/element-ui.min.css">
+<link rel="stylesheet" href="/vue/css/fonts/element-icons.woff">
+<link rel="stylesheet" href="/vue/css/enddate.css">
+<script src="/vue/js/vue.min.js"></script>
+<script src="/vue/js/element-ui.min.js"></script>
+<script src="/vue/js/jquery-1.11.0.min.js"></script>
+<body>
+<div id="apprule" style="width: 80%">
+    <el-row>
+        <el-button type="primary" @click="handleAdd()">添加</el-button>
+    </el-row>
+    <template>
+        <el-table
+                ref="multipleTable"
+                :data="tableData"
+                tooltip-effect="dark"
+                style="width: 100%"
+                border
+                @selection-change="handleSelectionChange">
+            <el-table-column type="index" width="50" label="编号" ></el-table-column>
+            <el-table-column label="id" width="50" prop="id" v-if="false">
+            </el-table-column>
+            <el-table-column label="规则名称" width="150" prop="ruleName">
+            </el-table-column>
+            <el-table-column label="执行顺序" width="100" prop="orderNum">
+            </el-table-column>
+            <el-table-column label="所属方案" width="200" prop="planName">
+            </el-table-column>
+            <el-table-column label="创建日期" width="160" prop="createTime">
+            </el-table-column>
+
+            <el-table-column label="操作">
+                <template slot-scope="scope">
+                    <el-button size="mini" @click="handleEdit(scope.$index, scope.row,tableData)">编辑</el-button>
+                    <el-button size="mini" @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                </template>
+            </el-table-column>
+        </el-table>
+    </template>
+</div>
+
+
+
+<div id="apprule2" style="width: 70%;height: 80%">
+    <el-dialog title="规则信息" :visible.sync="dialogFormVisible" :fullscreen="dialogFull" width="70%">
+        <template>
+        <el-form :model="ruleForm"  ref="ruleForm" label-width="100px" class="demo-ruleForm">
+
+            <el-row>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="规则名称:" prop="ruleName">
+                        <el-input v-model="ruleForm.ruleName"></el-input>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple-light">
+                    <!--<el-form-item label="所属方案:" prop="planName">
+                        <el-input v-model="ruleForm.planName"></el-input>
+                    </el-form-item>-->
+                    <el-form-item label="所属方案:" :rules="[{required: true, message: '请选择', trigger: 'blur' }]">
+                        <el-select v-model="ruleForm.planId" filterable  placeholder="选择方案">
+                            <el-option
+                                    v-for="item in planId"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value" :required=true>
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="执行顺序:" prop="orderNum">
+                        <el-input v-model="ruleForm.orderNum" ></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+
+            <el-tabs type="border-card">
+                <el-tab-pane label="脚本">
+                    <el-form-item label="来源库脚本:">
+                        <el-input :rows="6" style="width: 600px;" type="textarea" placeholder="select column1,column2 from tableName" v-model="ruleForm.sourceSql" ></el-input>
+                    </el-form-item><br><br>
+                    <el-form-item label="目标库脚本:">
+                        <el-input :rows="6" style="width: 600px;" type="textarea" placeholder="insert into tableName(column1,column2)" v-model="ruleForm.targetSql"></el-input>
+                    </el-form-item>
+                </el-tab-pane>
+
+                <el-tab-pane label="字段">
+                    <el-row :gutter="20">
+                        <el-col :span="20"><div class="grid-content bg-purple">
+                            <template>
+                                <el-table size="small" :data="dataForm" border>
+                                    <el-table-column type="index" width="50" label="序号"></el-table-column>
+                                    <el-table-column prop="onefilter" label="来源字段" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.sourceField" placeholder="来源字段" ></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="oneValue" label="目标字段" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.targetField" placeholder="目标字段" :disabled="true"></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="onefilter" label="说明" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.explain" placeholder="说明"></el-input>
+                                        </template>
+                                    </el-table-column>
+
+
+                                </el-table>
+                            </template>
+                        </div></el-col>
+                    </el-row>
+                </el-tab-pane>
+
+            </el-tabs>
+
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('ruleForm')">保存</el-button>
+            </el-form-item>
+        </el-form>
+    </template>
+    </el-dialog>
+</div>
+</body>
+</html>
+<script>
+    function selectDataForm(rule) {
+        $.ajax({
+            type: "POST",
+            data: rule,
+            dataType:"json",
+            url: "/rulecolumn/selectRuleColumn/",
+            success: function (result) {
+                if (result.code == '0') {
+                    apprule2.dataForm = result.data;
+                }
+            }
+        });
+    }
+
+        function planIds() {
+            var planIds =[];
+            $.ajax({
+            type: "POST",
+            data: {},
+            url: "/plan/all/",
+            success: function (result) {
+                if (result.code == '0') {
+                    var list = result.data;
+                    for (var i = 0; i < list.length; i++) {
+                        planIds.push({value: list[i].id, label: list[i].name});
+                    }
+                }
+            }
+            });
+        return planIds;
+        }
+</script>
+<script>
+    var aVue = new Vue({
+    el:'#apprule',
+      data() {
+          return {
+              tableData: []
+          }
+      },
+        mounted: function () {
+            this.findAll();
+        },
+      methods: {
+          //查询所有用户信息
+          findAll:function(){
+              $.ajax({
+                  type: "POST",
+                  data: "",
+                  url: "/rule/all",
+                  success: function (result) {
+                      if (result.code == '0') {
+                          aVue.tableData=result.data;
+                      } else {
+                          alert(result.msg);
+                      }
+                  }
+              });
+          },
+          handleSelectionChange(val) {
+              this.multipleSelection = val;
+          },
+          handleEdit(index, row,tableData){
+              apprule2.ruleForm = row;
+              selectDataForm(row);
+              apprule2.dialogFormVisible=true;
+          },
+          handleDelete(index, row){
+              var r=confirm("真的删除么");
+              if (r==true){
+                  $.ajax({
+                      type: "POST",
+                      data: row.id,
+                      url: "/rule/delRule/"+row.id,
+                      success: function (data) {
+                          if (data.code == '0') {
+                              alert(data.msg);
+                              window.location.href="/rule/add";
+                          } else {
+                              alert(data.msg);
+                          }
+                      }
+                  });
+              } else{
+                  return;
+              }
+          },
+          handleAdd(){
+              apprule2.ruleForm = [];
+              apprule2.dialogFormVisible=true;
+          }
+      }
+  })
+</script>
+<script>
+    var apprule2 =   new Vue({
+        el:'#apprule2',
+        data() {
+            return {
+                dialogFull:false,
+                dialogFormVisible: false,
+                ruleForm: {
+                    ruleName: '',
+                    planName: '',
+                    orderNum: '',
+                    createTime: '',
+                    sourceSql: '',
+                    targetSql: ''
+                },
+                dataForm: [],
+                planId: planIds(),
+            };
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        console.log(apprule2.ruleForm);
+                        var _params={};
+                        var rule = {
+                            isUse:1,
+                            id:apprule2.ruleForm.id,
+                            ruleName:apprule2.ruleForm.ruleName,
+                            orderNum:apprule2.ruleForm.orderNum,
+                            planId:apprule2.ruleForm.planId,
+                            sourceSql:apprule2.ruleForm.sourceSql,
+                            targetSql:apprule2.ruleForm.targetSql
+                        };
+                        _params.rule = rule;
+                        _params.dataForm= apprule2.dataForm;
+                        $.ajax({
+                            type: "POST",
+                            data: JSON.stringify(_params),
+                            contentType:"application/json",
+                            dataType:"json",
+                            url: "/rule/savetoRule",
+                            success: function (data) {
+                                if (data.code == '0') {
+                                    alert(data.msg);
+                                    apprule2.dialogFormVisible=false;
+                                    window.location.href="/rule/add";
+                                } else {
+                                    alert(data.msg);
+                                }
+                                return false;
+                            }
+                        });
+                    } else {
+                        console.log('error submit!!');
+                        return false;
+                    }
+                });
+            },
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            }
+        }
+    })
+</script>

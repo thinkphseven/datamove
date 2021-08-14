@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!--head部分-->
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" href="/vue/css/element-ui.min.css">
+<link rel="stylesheet" href="/vue/css/fonts/element-icons.woff">
+<link rel="stylesheet" href="/vue/css/enddate.css">
+<script src="/vue/js/vue.min.js"></script>
+<script src="/vue/js/element-ui.min.js"></script>
+<script src="/vue/js/jquery-1.11.0.min.js"></script>
+<body>
+<div id="appfi" style="text-align: center;">
+    <template>
+        <el-progress type="dashboard" :percentage="percentage" :color="colors"></el-progress>
+        <span class="percentage-label">{{list}}</span>
+    </template>
+</div>
+</body>
+</html>
+<script>
+ var appfi = new Vue({
+        el:'#appfi',
+        data(){
+            return {
+                percentage: 0,
+                colors: [
+                    {color: '#f56c6c', percentage: 20},
+                    {color: '#e6a23c', percentage: 40},
+                    {color: '#5cb87a', percentage: 60},
+                    {color: '#1989fa', percentage: 80},
+                    {color: '#6f7ad3', percentage: 100}
+                ],
+                list: []
+            }
+        },
+         mounted() {
+             // setInterval(() => {
+             //     this.percentage = (this.percentage % 100) + 10
+             // }, 1000)
+         }
+    })
+</script>
+<script>
+    function execute() {
+        var ruleLists = parent.$("#rule")[0].contentWindow.aVue.tableData;
+        var acctForm = parent.$("#acct")[0].contentWindow.apprule2.ruleForm;
+        var acctColumnData = parent.$("#acct")[0].contentWindow.apprule2.dataForm;
+        if (ruleLists!=null && ruleLists.length>0){
+            for(var i=0;i<ruleLists.length;i++){
+                    $.ajax({
+                        type: "POST",
+                        async: false,
+                        data: ruleLists[i],
+                        data: JSON.stringify(_params),
+                        contentType:"application/json",
+                        dataType:"json",
+                        url: "/rule/executeRule/",
+                        success: function (result) {
+                            if (result.code == '0') {
+                                appfi.list.push(result.msg);
+                                appfi.percentage = (100/ruleLists.length)*(i+1);
+                            }
+                        },
+                        error : function(e){  //请求失败，包含具体的错误信息
+                            console.log(e.status);
+                            console.log(e.responseText);
+                        }
+                    });
+            }
+        }
+    }
+</script>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<link rel="stylesheet" href="/vue/css/element-ui.min.css">
+<link rel="stylesheet" href="/vue/css/fonts/element-icons.woff">
+<link rel="stylesheet" href="/vue/css/enddate.css">
+<script src="/vue/js/vue.min.js"></script>
+<script src="/vue/js/element-ui.min.js"></script>
+<script src="/vue/js/jquery-1.11.0.min.js"></script>
+<body>
+
+<div id="apprule2" style="width: 70%;height: 80%">
+
+    <el-dialog title="规则信息" :visible.sync="dialogFormVisible" :fullscreen="dialogFull" width="70%">
+        <template>
+        <el-form :model="ruleForm"  ref="ruleForm" label-width="100px" class="demo-ruleForm">
+            <el-row>
+                <el-button type="primary" @click="submitForm('ruleForm')">保存</el-button>
+            </el-row>
+            <el-row>
+                <!--<el-col :span="8"><div class="grid-content bg-purple-light">
+                    <el-form-item label="所属方案:" :rules="[{required: true, message: '请选择', trigger: 'blur' }]">
+                        <el-select v-model="ruleForm.planId" filterable  placeholder="选择方案">
+                            <el-option
+                                    v-for="item in planId"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value" :required=true>
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>-->
+                <el-col :span="8"><div class="grid-content bg-purple-light">
+                    <el-form-item label="辅助方案:" >
+                        <el-select v-model="ruleForm.acctName" filterable  placeholder="选择" @change="acctNamechange">
+                            <el-option
+                                    v-for="item in acctName"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value" :required=true>
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="单位编码:" prop="agencyCode">
+                        <el-input v-model="ruleForm.agencyCode"></el-input>
+                    </el-form-item>
+                </div></el-col>
+
+                <el-col :span="8"><div class="grid-content bg-purple">
+                    <el-form-item label="财政区划代码:" prop="mofDivCode">
+                        <el-input v-model="ruleForm.mofDivCode" ></el-input>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>
+            <!--<el-row>
+                <el-col :span="8"><div class="grid-content bg-purple-light">
+                    <el-form-item label="辅助方案:" >
+                        <el-select v-model="ruleForm.acctName" filterable  placeholder="选择" @change="acctNamechange">
+                            <el-option
+                                    v-for="item in acctName"
+                                    :key="item.value"
+                                    :label="item.label"
+                                    :value="item.value" :required=true>
+                            </el-option>
+                        </el-select>
+                    </el-form-item>
+                </div></el-col>
+            </el-row>-->
+
+            <el-tabs type="border-card">
+
+                    <el-row :gutter="20">
+                        <el-col :span="20"><div class="grid-content bg-purple">
+                            <template>
+                                <el-table size="small" :data="dataForm" border>
+                                    <el-table-column type="index" width="50" label="序号"></el-table-column>
+                                    <el-table-column prop="sourceName" label="来源字段" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.sourceName" placeholder="来源字段" ></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="targetName" label="目标字段" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.targetName" placeholder="目标字段" :disabled="true"></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="explain" label="说明" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.explain" placeholder="说明"></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="type" label="状态" width="" header-align="center" align="center" v-if="false">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.type" placeholder="状态" ></el-input>
+                                        </template>
+                                    </el-table-column>
+
+
+
+                                </el-table>
+                            </template>
+                        </div></el-col>
+                    </el-row>
+
+            </el-tabs>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm('ruleForm')">保存</el-button>
+            </el-form-item>
+        </el-form>
+    </template>
+    </el-dialog>
+</div>
+</body>
+</html>
+<script>
+    function selectAcctColumnForm(acctId,type) {
+        $.ajax({
+            type: "GET",
+            data: "",
+            dataType:"json",
+            url: "/plan/selectAcctColumn/"+acctId+"/"+type,
+            success: function (result) {
+                if (result.code == '0') {
+                    apprule2.dataForm = result.data;
+                }
+            }
+        });
+    }
+    function planIds() {
+            var planIds =[];
+            $.ajax({
+            type: "POST",
+            data: {},
+            url: "/plan/all/",
+            success: function (result) {
+                if (result.code == '0') {
+                    var list = result.data;
+                    for (var i = 0; i < list.length; i++) {
+                        planIds.push({value: list[i].id, label: list[i].name});
+                    }
+                }
+            }
+            });
+        return planIds;
+    }
+    function accts() {
+        var accts =[];
+        $.ajax({
+            type: "POST",
+            data: {},
+            url: "/plan/acctAll/",
+            success: function (result) {
+                if (result.code == '0') {
+                    var list = result.data;
+                    for (var i = 0; i < list.length; i++) {
+                        accts.push({value: list[i].id, label: list[i].acctName});
+                    }
+                }
+            }
+        });
+        return accts;
+    }
+</script>
+<script>
+
+</script>
+<script>
+    var apprule2 =   new Vue({
+        el:'#apprule2',
+        data() {
+            return {
+                dialogFull:true,
+                dialogFormVisible: true,
+                ruleForm: {
+                    planId: '',
+                    planName: '',
+                    agencyCode: '',
+                    mofDivCode: ''
+                },
+                // dataForm: [{"id":1,"acctId":null,"sourceName":null,"targetName":"glaPersonal","explain":"往来个人","type":"0"},{"id":2,"acctId":null,"sourceName":null,"targetName":"glaDepartment","explain":"自定义部门","type":"0"},{"id":3,"acctId":null,"sourceName":null,"targetName":"glaAgency","explain":"往来单位","type":"0"},{"id":4,"acctId":null,"sourceName":null,"targetName":"expFunc","explain":"功能分类","type":"0"},{"id":5,"acctId":null,"sourceName":null,"targetName":"pro","explain":"项目","type":"0"},{"id":6,"acctId":null,"sourceName":null,"targetName":"cashFlow","explain":"现金流量","type":"0"},{"id":7,"acctId":null,"sourceName":null,"targetName":"iaType","explain":"无形资产类别","type":"0"},{"id":8,"acctId":null,"sourceName":null,"targetName":"account","explain":"会计科目","type":"0"},{"id":9,"acctId":null,"sourceName":null,"targetName":"payType","explain":"支付方式","type":"0"},{"id":10,"acctId":null,"sourceName":null,"targetName":"fundType","explain":"资金性质","type":"0"},{"id":11,"acctId":null,"sourceName":null,"targetName":"assetDisposalMethods","explain":"资产处理方式","type":"0"},{"id":12,"acctId":null,"sourceName":null,"targetName":"expire","explain":"到期期限","type":"0"},{"id":13,"acctId":null,"sourceName":null,"targetName":"businessIncomeSource","explain":"事业收入来源","type":"0"},{"id":14,"acctId":null,"sourceName":null,"targetName":"affordableHousingProject","explain":"保障性住房项目","type":"0"},{"id":15,"acctId":null,"sourceName":null,"targetName":"qty","explain":"数量","type":"0"},{"id":16,"acctId":null,"sourceName":null,"targetName":"govBgtEco","explain":"政府经济科目","type":"0"},{"id":17,"acctId":null,"sourceName":null,"targetName":"faType","explain":"资产类别","type":"0"},{"id":18,"acctId":null,"sourceName":null,"targetName":"depBgtEco","explain":"部门经济科目","type":"0"},{"id":19,"acctId":null,"sourceName":null,"targetName":"indSource","explain":"预算来源","type":"0"},{"id":20,"acctId":null,"sourceName":null,"targetName":"infrastructure","explain":"公共基础设施项目","type":"0"},{"id":21,"acctId":null,"sourceName":null,"targetName":"investment","explain":"长期股权投资取得方式","type":"0"},{"id":22,"acctId":null,"sourceName":null,"targetName":"accountMethod","explain":"核算方法","type":"0"},{"id":23,"acctId":null,"sourceName":null,"targetName":"proFund","explain":"项目归类","type":"0"},{"id":24,"acctId":null,"sourceName":null,"targetName":"glaElement01","explain":"自定义要素01","type":"0"},{"id":25,"acctId":null,"sourceName":null,"targetName":"glaElement02","explain":"自定义要素02","type":"0"},{"id":26,"acctId":null,"sourceName":null,"targetName":"glaElement03","explain":"自定义要素03","type":"0"},{"id":27,"acctId":null,"sourceName":null,"targetName":"glaElement04","explain":"自定义要素04","type":"0"},{"id":28,"acctId":null,"sourceName":null,"targetName":"glaElement05","explain":"自定义要素05","type":"0"},{"id":29,"acctId":null,"sourceName":null,"targetName":"glaElement06","explain":"自定义要素06","type":"0"},{"id":30,"acctId":null,"sourceName":null,"targetName":"glaElement07","explain":"自定义要素07","type":"0"},{"id":31,"acctId":null,"sourceName":null,"targetName":"glaElement08","explain":"自定义要素08","type":"0"},{"id":32,"acctId":null,"sourceName":null,"targetName":"glaElement09","explain":"自定义要素09","type":"0"},{"id":33,"acctId":null,"sourceName":null,"targetName":"glaElement10","explain":"自定义要素10","type":"0"},{"id":34,"acctId":null,"sourceName":null,"targetName":"glaElement11","explain":"自定义要素11","type":"0"},{"id":35,"acctId":null,"sourceName":null,"targetName":"glaElement12","explain":"自定义要素12","type":"0"},{"id":36,"acctId":null,"sourceName":null,"targetName":"glaElement13","explain":"自定义要素13","type":"0"},{"id":37,"acctId":null,"sourceName":null,"targetName":"glaElement14","explain":"自定义要素14","type":"0"},{"id":38,"acctId":null,"sourceName":null,"targetName":"glaElement15","explain":"自定义要素15","type":"0"},{"id":39,"acctId":null,"sourceName":null,"targetName":"glaElement16","explain":"自定义要素16","type":"0"},{"id":40,"acctId":null,"sourceName":null,"targetName":"glaElement17","explain":"自定义要素17","type":"0"},{"id":41,"acctId":null,"sourceName":null,"targetName":"glaElement18","explain":"自定义要素18","type":"0"},{"id":42,"acctId":null,"sourceName":null,"targetName":"glaElement19","explain":"自定义要素19","type":"0"},{"id":43,"acctId":null,"sourceName":null,"targetName":"glaElement20","explain":"自定义要素20","type":"0"}],
+                dataForm: selectAcctColumnForm(0,0),
+                //planId: planIds(),
+                acctName: accts()
+            };
+        },
+        methods: {
+            submitForm(formName) {
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        this.$prompt('请输入要保存的辅助方案名称', '提示', {
+                            confirmButtonText: '确定',
+                            cancelButtonText: '取消'
+                        }).then(({ value }) => {
+                            if(value==null){
+                                this.$message({
+                                    type: 'info',
+                                    message: '保存失败，名称不能为空'
+                                });
+                                return;
+                            }
+                            console.log(apprule2.ruleForm);
+                            var _params={};
+                            var acct = {
+                                isUse:1,
+                                id:apprule2.ruleForm.id,
+                                acctName: value,
+                                planId:apprule2.ruleForm.planId,
+                                planName:apprule2.ruleForm.planName,
+                                sourceSql:apprule2.ruleForm.agencyCode,
+                                targetSql:apprule2.ruleForm.mofDivCode
+                            };
+                            _params.acct = acct;
+                            _params.dataForm= apprule2.dataForm;
+                            $.ajax({
+                                type: "POST",
+                                data: JSON.stringify(_params),
+                                contentType:"application/json",
+                                dataType:"json",
+                                url: "/plan/savetoAcct",
+                                success: function (data) {
+                                    if (data.code == '0') {
+                                        alert(data.msg);
+                                    } else {
+                                        alert(data.msg);
+                                    }
+                                    return false;
+                                }
+                            });
+                        }).catch(() => {
+                            this.$message({
+                                type: 'info',
+                                message: '取消保存'
+                            });
+                        });
+
+
+                    } else {
+                        console.log('error submit!!');
+                        return false;
+                    }
+                });
+            },
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            },
+            acctNamechange(acctId){
+                apprule2.dataForm = selectAcctColumnForm(acctId,1);
+            }
+        }
+    })
+</script>
