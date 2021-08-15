@@ -1,16 +1,38 @@
 package com.longtu.datamove.service;
 
-import com.longtu.datamove.entity.Plan;
+import com.longtu.datamove.entity.Note;
+import com.longtu.datamove.repositiory.NoteRepositiory;
+import com.longtu.datamove.repositiory.PlanRepositiory;
 import com.longtu.datamove.resp.RespEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-/**
- * @Title: PlanService
- * @description:
- * @author: hk
- * @date: 2021-05-13 10:02
- **/
-public interface NoteService {
-    RespEntity findAll();
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-    void saveNote(String module, String opMethod, String s);
+
+@Service
+public class NoteService{
+
+    @Autowired
+    private NoteRepositiory noteRepositiory;
+
+    @Autowired
+    private PlanRepositiory planRepository;
+
+
+    public RespEntity findAll() {
+        return new RespEntity ("0", noteRepositiory.findAll(),"查询成功");
+    }
+
+    public void saveNote(String module, String opMethod, String s) {
+        Note note = new Note();
+        note.setIsDelete(0);
+        note.setModule(module);
+        note.setOpMethod(opMethod);
+        note.setTime(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
+        note.setResult(s);
+        note.setUserName("admin");
+        noteRepositiory.save(note);
+    }
 }

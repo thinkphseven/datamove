@@ -98,8 +98,8 @@ public class RuleController {
     @ResponseBody
     @RequestMapping("/executeRule")
     @OpLog(module = "规则管理",opMethod = "执行规则")
-    public RespEntity executeRule(Rule rule) throws SQLException {
-        return ruleService.executeRule(rule);
+    public RespEntity executeRule(@RequestBody Map map) throws SQLException {
+        return ruleService.executeRule(map);
     }
 
     @ResponseBody

@@ -1,4 +1,4 @@
-package com.longtu.datamove.service.impl;
+package com.longtu.datamove.service;
 
 import com.longtu.datamove.entity.PlanAcctColumn;
 import com.longtu.datamove.repositiory.PlanAcctColumnRepositiory;

@@ -1,6 +1,5 @@
 package com.longtu.datamove.aspect;
 
-import com.longtu.datamove.entity.Note;
 import com.longtu.datamove.service.NoteService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -9,7 +8,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 
 /**

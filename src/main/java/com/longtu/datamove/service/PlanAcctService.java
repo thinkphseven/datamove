@@ -1,4 +1,4 @@
-package com.longtu.datamove.service.impl;
+package com.longtu.datamove.service;
 
 import com.alibaba.fastjson.JSON;
 import com.longtu.datamove.entity.PlanAcct;
