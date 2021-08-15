@@ -15,12 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Title: IndexController
- * @description:
- * @author: hk
- * @date: 2021-04-28 16:03
- **/
+
 @Controller
 public class IndexController {
 

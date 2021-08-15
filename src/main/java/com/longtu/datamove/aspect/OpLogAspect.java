@@ -10,12 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
-/**
- * @Title: OpLogAspect
- * @description:
- * @author: hk
- * @date: 2021-05-18 11:21
- **/
 @Aspect
 @Component
 public class OpLogAspect {

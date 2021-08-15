@@ -15,12 +15,6 @@ import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * @Title: PlanServiceImpl
- * @description:
- * @author: hk
- * @date: 2021-05-13 10:02
- **/
 @Service
 public class PlanService {
 

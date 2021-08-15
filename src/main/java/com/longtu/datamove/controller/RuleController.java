@@ -13,12 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * @Title: PlanController
- * @description:
- * @author: hk
- * @date: 2021-04-28 15:35
- **/
 @Controller
 @RequestMapping("rule")
 public class RuleController {

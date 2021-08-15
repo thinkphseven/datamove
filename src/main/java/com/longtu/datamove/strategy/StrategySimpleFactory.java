@@ -9,8 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * 简单工厂模式，提供子类的创建，建立抵消类型和子类的对于关系（避免业务代码if else）
  * 利用jvm类加载特性保证线程安全和单例的实现
  * @ClassName StrategySimpleFactory
- * @Author hk
- * @Date 2020/10/16 16:49
  */
 public class StrategySimpleFactory {
     public static Map<String, ConnectDB> map ;

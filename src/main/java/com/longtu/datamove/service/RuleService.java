@@ -26,12 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @Title: RuleServiceImpl
- * @description:
- * @author: hk
- * @date: 2021-05-13 10:03
- **/
 @Service
 public class RuleService{
 

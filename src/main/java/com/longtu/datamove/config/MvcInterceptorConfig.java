@@ -7,12 +7,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
-/**
- * @Title: MvcInterceptorConfig
- * @description:
- * @author: hk
- * @date: 2021-05-20 11:57
- **/
 @Configuration
 public class MvcInterceptorConfig extends WebMvcConfigurationSupport {
 

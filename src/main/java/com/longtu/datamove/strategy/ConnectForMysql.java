@@ -3,18 +3,9 @@ package com.longtu.datamove.strategy;
 import com.longtu.datamove.util.DmUtil;
 import org.springframework.stereotype.Component;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Connection;
 
-/**
- * @Title: ConnectForMysql
- * @description:
- * @author: hk
- * @date: 2021-05-13 10:19
- **/
+
 @Component
 public class ConnectForMysql extends AConnectDB {
 

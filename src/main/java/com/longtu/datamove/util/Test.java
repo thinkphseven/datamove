@@ -1,7 +1,6 @@
 package com.longtu.datamove.util;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,12 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Title: Test
- * @description:
- * @author: hk
- * @date: 2021-04-30 09:26
- **/
+
 public class Test {
 
     public static void main(String[] args) {

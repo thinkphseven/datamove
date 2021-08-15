@@ -7,12 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-/**
- * @Title: NoteController
- * @description:
- * @author: hk
- * @date: 2021-04-28 15:35
- **/
+
 @Controller
 @RequestMapping("note")
 public class NoteController {

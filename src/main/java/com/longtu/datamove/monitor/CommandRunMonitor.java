@@ -6,12 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-/**
- * @Title: CommandRunMonitor
- * @description:
- * @author: hk
- * @date: 2021-04-28 16:00
- **/
+
 @Component
 public class CommandRunMonitor  implements CommandLineRunner {
 

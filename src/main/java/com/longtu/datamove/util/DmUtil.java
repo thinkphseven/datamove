@@ -3,12 +3,6 @@ package com.longtu.datamove.util;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
-/**
- * @Title: DmUtil
- * @description:
- * @author: hk
- * @date: 2021-05-13 10:26
- **/
 public class DmUtil {
 
     public static String DRIVER_MYSQL = "com.mysql.cj.jdbc.Driver";

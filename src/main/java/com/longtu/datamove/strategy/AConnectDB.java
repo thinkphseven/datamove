@@ -8,12 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @Title: AConnectDB
- * @description:
- * @author: hk
- * @date: 2021-05-18 16:18
- **/
+
 public abstract class AConnectDB implements ConnectDB{
 
     public abstract Connection getConnection(String user, String pwd, String port, String ip, String db);

@@ -8,12 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-/**
- * @Title: LoginInterceptor
- * @description:
- * @author: hk
- * @date: 2021-05-20 11:55
- **/
+
 @Component
 public class LoginInterceptor  implements HandlerInterceptor {
 

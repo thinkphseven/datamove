@@ -6,12 +6,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 
-/**
- * @Title: User
- * @description:
- * @author: hk
- * @date: 2021-04-28 16:23
- **/
+
 @Entity
 @Data
 @AllArgsConstructor
