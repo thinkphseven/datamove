@@ -50,10 +50,14 @@
         var acctColumnData = parent.$("#acct")[0].contentWindow.apprule2.dataForm;
         if (ruleLists!=null && ruleLists.length>0){
             for(var i=0;i<ruleLists.length;i++){
+                var _params = {};
+                _params.rule = ruleLists[i];
+                _params.acctForm = acctForm;
+                _params.acctColumnData = acctColumnData;
+
                     $.ajax({
                         type: "POST",
                         async: false,
-                        data: ruleLists[i],
                         data: JSON.stringify(_params),
                         contentType:"application/json",
                         dataType:"json",
