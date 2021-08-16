@@ -35,6 +35,8 @@ public class PlanAcctColumn {
 
     private String type;
 
+    private String tablecode;
 
+    private String isSelf;
 
 }

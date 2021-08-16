@@ -1,9 +1,7 @@
 package com.longtu.datamove.service;
 
 import com.alibaba.fastjson.JSON;
-import com.longtu.datamove.entity.Plan;
-import com.longtu.datamove.entity.Rule;
-import com.longtu.datamove.entity.RuleColumn;
+import com.longtu.datamove.entity.*;
 import com.longtu.datamove.repositiory.PlanRepositiory;
 import com.longtu.datamove.repositiory.RuleColumnRepositiory;
 import com.longtu.datamove.repositiory.RuleRepositiory;
@@ -18,12 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -182,7 +179,12 @@ public class RuleService{
         return new RespEntity("0",ruleList,"查询成功");
     }
 
-    
+    /**
+     * 前端循环调用执行规则
+     * @param map
+     * @return
+     * @throws SQLException
+     */
     @Transactional
     public RespEntity executeRule(Map map) throws SQLException {
         String json = JSON.toJSON(map.get("rule")).toString();
@@ -223,6 +225,7 @@ public class RuleService{
                     String sql = sourcesql.toLowerCase();//转成小写
                     String sql2 = sql.split("from")[1];
                     sourcesql = "select "+substring +" from  "+sql2 +" ";
+                    sourcesql = sourcesql.replace("#{id}", "id,name,psw ");
                 }
                 List<Map<String, Object>> datas = connectDB.query(connection, sourcesql);
                 if (datas != null && datas.size() > 0) {
@@ -244,8 +247,12 @@ public class RuleService{
 
     }
 
+    /**
+     * 保存规则和字段
+     * @param map
+     * @return
+     */
     @Transactional
-    
     public RespEntity savetoRule(Map map) {
         String json = JSON.toJSON(map.get("rule")).toString();
         Rule rule = JSON.parseObject(json, Rule.class);
@@ -294,4 +301,127 @@ public class RuleService{
 
         return new RespEntity("0","规则保存成功");
     }
+
+    /**
+     * 科目辅助核算，辅助值级(程序代码处理)
+     * @param map
+     * @return
+     */
+    @Transactional
+    public RespEntity subjectToAccount(Map map) {
+        String json = JSON.toJSON(map.get("rule")).toString();
+        Rule rule = JSON.parseObject(json, Rule.class);
+
+        Long planId = rule.getPlanId();
+        //获取方案的数据库连接信息
+        Plan plan = planRepository.findById(planId).get();
+
+        String acctForm = JSON.toJSON(map.get("acctForm")).toString();
+        PlanAcct planAcct = JSON.parseObject(acctForm, PlanAcct.class);
+        String agencyCode = planAcct.getAgencyCode();
+        String mofDivCode = planAcct.getMofDivCode();
+        try {
+            //1.先查询u8库的fzhs字段
+            String sql1 = "select zth+'-'+kjnd+'-'+kmdm, fzhs, kjnd from gl_kmxx where fzhs <> ''";
+            ConnectDB connectDB = StrategySimpleFactory.getInstance(plan.getSourceDbType());
+            Connection connection = connectDB.getConnection(plan.getSourceUsername(), plan.getSourcePwd(), plan.getSourcePort(), plan.getSourceIp(), plan.getSourceDb());
+            if(connection==null){
+                return new RespEntity("0","来源库连接失败");
+            }
+            List<Map<String, Object>> mapList = connectDB.query(connection, sql1);
+            List<List<String>> list = new ArrayList<>();
+            //获取拆分后的值，拆分后fzdm+拆分逗号值，如fzhs=,1,2,拆分后，fzdm1,fzdm2
+            for(Map<String, Object> fzhsMap: mapList){
+                String fzhs = String.valueOf(fzhsMap.get("fzhs"));
+                fzhs = fzhs.substring(1, fzhs.length()-1);
+                String[] fzhsArr = fzhs.split(",");
+                for (int i=0;i<fzhsArr.length;i++){
+                    List<String> setList = new ArrayList<>();
+                    setList.add(UUID.randomUUID().toString().replaceAll("-", ""));
+                    setList.add("UUID.randomUUID().toString().replaceAll(\"-\", \"\")");//科目取上条语句查出科目
+                    setList.add(agencyCode);//单位编码
+                    setList.add("fzdm"+fzhsArr[i]);
+                    setList.add(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
+                    setList.add("g1");
+                    setList.add(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
+                    setList.add("g1");
+                    setList.add("2");//是否删除
+                    setList.add(mofDivCode);//取录入区划值
+                    setList.add("9daca3e37a3949a3b37bd1aff784fe3e");//账套主键
+                    setList.add("2019");//会计年度取科目对应
+                    setList.add("1");
+                    setList.add("1");
+                    setList.add("0");
+                }
+            }
+
+            //2.科目辅助核算表保存拆分后的数据
+            String sql2 = "insert into gla_account_element_set (data_id, account_cls, agency, element_code, create_time, create_user, update_time, update_user, is_delete, mof_div_code, acct_set, year, is_enabled, is_required, is_disabled)";
+            int begin = sql2.indexOf("(");
+            int last = sql2.indexOf(")");
+            String str = sql2.substring(begin+1,last);
+            String[] columns = str.split(",");
+
+            ConnectDB connectDB2 = StrategySimpleFactory.getInstance(plan.getTargetDbType());
+            Connection connection2 = connectDB2.getConnection(plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(), plan.getTargetIp(), plan.getTargetDb());
+            if(connection2==null){
+                return new RespEntity("0","规则【"+rule.getRuleName()+"】目标库库连接失败");
+            }
+            PreparedStatement prest = connection2.prepareStatement(sql2, ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
+            for(List s : list){
+                for (int i=0; i < columns.length; i++) {
+                    prest.setObject(i, s.get(i));
+                }
+                prest.addBatch();
+            }
+            prest.executeBatch();
+
+            //3.根据辅助核算对应表更新element_code
+            String sql3 = " update gla_account_element_set set element_code = ? where element_code = ? ";
+            prest = connection2.prepareStatement(sql3, ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
+            for(Map<String, Object> map1 : mapList){
+                String sourceName = String.valueOf(map1.get("sourceName"));
+                if(!"null".equals(sourceName) && !"".equals(sourceName)){
+                    prest.setObject(1, String.valueOf(map1.get("targetName")));
+                    prest.setObject(2, sourceName);
+                }
+                prest.addBatch();
+            }
+            prest.executeBatch();
+
+            //4.根据辅助核算对应表，将对应值级查询来源库数据插入到目标库
+            String lbdm = "";
+            String sql4 = "select * from GL_Fzxzl  where lbdm = '"+lbdm+"' ";
+            List<PlanAcctColumn> acctColumnData = (List<PlanAcctColumn>) map.get("acctColumnData");
+            for (PlanAcctColumn pac : acctColumnData){
+                if(pac.getSourceName()!=null && pac.getSourceName()!="" && "1".equals(pac.getIsSelf())){
+                    lbdm = pac.getSourceName().replace("fzdm", "");
+                    List<Map<String, Object>> lbdmList = connectDB.query(connection, sql1);
+                    String sql5 = "INSERT INTO "+pac.getTablecode()+" (data_id, code, name, short_name, whole_name, parent_id, level_no, is_leaf, is_enabled, is_standard, status, type, start_date, end_date, acct_set, agency, data1, data2, data3, data4, data5, data6, data7, data8, data9, mof_div_code, year, is_deleted, update_time, create_time, create_user, update_user)";
+
+                }
+            }
+
+            if(connection !=null){
+                try{
+                    connection.close();
+                }catch(SQLException e){
+                    e.printStackTrace();
+                }
+            }
+            if(connection2 !=null){
+                try{
+                    connection2.close();
+                }catch(SQLException e){
+                    e.printStackTrace();
+                }
+            }
+        }catch (Exception e){
+
+        }
+
+        return new RespEntity("0","执行成功");
+    }
+
+
 }
