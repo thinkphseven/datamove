@@ -1,5 +1,6 @@
 package com.longtu.datamove.service;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson.JSON;
 import com.longtu.datamove.entity.*;
 import com.longtu.datamove.repositiory.PlanRepositiory;
@@ -8,18 +9,16 @@ import com.longtu.datamove.repositiory.RuleRepositiory;
 import com.longtu.datamove.resp.RespEntity;
 import com.longtu.datamove.strategy.ConnectDB;
 import com.longtu.datamove.strategy.StrategySimpleFactory;
-import com.longtu.datamove.util.SelectSQL;
 import com.longtu.datamove.util.SelectTableUtils;
+import com.longtu.datamove.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -96,7 +95,7 @@ public class RuleService{
                 if (datas != null && datas.size() > 0) {
                     // 插入目标库
                     connectDB = StrategySimpleFactory.getInstance(plan.getTargetDbType());
-                    flag = connectDB.insertBatch(connectDB.getConnection( plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(),plan.getTargetIp(), plan.getTargetDb()),datas,obj);
+                    flag = connectDB.insertBatch(connectDB.getConnection( plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(),plan.getTargetIp(), plan.getTargetDb()),datas,obj,"");
                 } else {
                     return new RespEntity("0","来源库未查到任何数据");
                 }
@@ -187,8 +186,15 @@ public class RuleService{
      */
     @Transactional
     public RespEntity executeRule(Map map) throws SQLException {
+        //获取规则信息
         String json = JSON.toJSON(map.get("rule")).toString();
         Rule rule = JSON.parseObject(json, Rule.class);
+        //获取辅助核算对应关系信息
+        String acctForm = JSON.toJSON(map.get("acctForm")).toString();
+        PlanAcct planAcct = JSON.parseObject(acctForm, PlanAcct.class);
+        String agencyCode = planAcct.getAgencyCode();
+        String mofDivCode = planAcct.getMofDivCode();
+
         try {
             boolean flag = true;
 
@@ -216,16 +222,53 @@ public class RuleService{
                 }
                 //
                 List<RuleColumn> ruleColumns = ruleColumnRepositiory.selectRuleColumn(rule.getId());
+                String sourceStr = "";
+                String targetStr = "";
                 if(ruleColumns!=null && ruleColumns.size()>0){
-                    StringBuffer buffer = new StringBuffer();
+                    StringBuffer buffers = new StringBuffer();
+                    StringBuffer buffert = new StringBuffer();
+                    //必须加上别名
+//                    for(RuleColumn ruleColumn :ruleColumns){
+//                        buffers.append(ruleColumn.getSourceField()+",");
+//                        buffert.append(ruleColumn.getTargetField()+",");
+//                    }
                     ruleColumns.forEach(n-> {
-                        buffer.append(n.getSourceField()+",");
+                        buffers.append("@@@@"+n.getSourceField());
+                        buffert.append(n.getTargetField()+",");
                     });
-                    String substring = buffer.toString().substring(0, buffer.length() - 1);
+                    String substring = buffers.toString().substring(4);
+                    String tubstring = buffert.toString().substring(0, buffert.length() - 1);
+
+                    //将查询sql中的占位符替换掉
+                    substring = substring.replace("#{mofDivCode}", "'"+mofDivCode+"'");
+                    substring = substring.replace("#{agencyCode}", "'"+agencyCode+"'");
+                    substring = substring.replace("#{dwzj}", "'"+agencyCode+"'");
+                    substring = substring.replace("#{ztzj}", "'ztzj139002'");
+                    //查询科目辅助核算对应关系
+
+                    List<PlanAcctColumn> acctColumnData = (List<PlanAcctColumn>) map.get("acctColumnData");
+                    for(int i=0;i< acctColumnData.size();i++){
+                        PlanAcctColumn planAcctColumn = JSON.parseObject(JSON.toJSONString(acctColumnData.get(i)), PlanAcctColumn.class);
+                        if(planAcctColumn.getSourceName() != null && planAcctColumn.getSourceName() != ""){
+                            sourceStr += "@@@@"+planAcctColumn.getSourceName();
+                            targetStr += StrUtil.toUnderlineCase(planAcctColumn.getTargetName())+",";
+                        }
+                    }
+                    substring = substring.replace("#{fzhs}", sourceStr.substring(4));
+                    tubstring = tubstring.replace("#{fzhs}", targetStr.substring(0, targetStr.length() - 1));
+
+                    StringBuffer stringBuffer = new StringBuffer();
+                    String[] ssplit = substring.split("@@@@");
+                    String[] tsplit = tubstring.split(",");
+                    for(int i =0;i<tsplit.length;i++){
+                        stringBuffer.append(","+ssplit[i]+" as "+tsplit[i]);
+                    }
+                    String toString = stringBuffer.toString();
+                    toString = toString.substring(1);
                     String sql = sourcesql.toLowerCase();//转成小写
                     String sql2 = sql.split("from")[1];
-                    sourcesql = "select "+substring +" from  "+sql2 +" ";
-                    sourcesql = sourcesql.replace("#{id}", "id,name,psw ");
+                    sourcesql = "select "+toString +" from  "+sql2 +" ";
+
                 }
                 List<Map<String, Object>> datas = connectDB.query(connection, sourcesql);
                 if (datas != null && datas.size() > 0) {
@@ -235,13 +278,14 @@ public class RuleService{
                     if(connection1==null){
                         return new RespEntity("0","规则【"+rule.getRuleName()+"】目标库库连接失败");
                     }
-                    flag = connectDB.insertBatch(connection1,datas,rule);
+                    flag = connectDB.insertBatch(connection1,datas,rule,targetStr);
                 } else {
                     return new RespEntity("0","规则【"+rule.getRuleName()+"】来源库未查到任何数据");
                 }
             }
             return new RespEntity("0",flag ? "规则【"+rule.getRuleName()+"】执行成功" : "规则【"+rule.getRuleName()+"】执行失败");
         }catch (Exception e){
+            e.printStackTrace();
             return new RespEntity("0","规则【"+rule.getRuleName()+"】执行失败");
         }
 
@@ -281,18 +325,23 @@ public class RuleService{
             if(sourceSql!=null){
                 String targetSql = rule.getTargetSql();
 
-                List<String> columns = SelectSQL.selectSQLtoDb(sourceSql,plan);
+//                List<String> columns = SelectSQL.selectSQLtoDb(sourceSql,plan);
+                String sql = sourceSql.toLowerCase();//转成小写
+                String sql2 = sql.split("select")[1];
+                String sql3 = sql2.split("from")[0];
+                String [] columns = sql3.split(",");
 
                 int begin = targetSql.indexOf("(");
                 int last = targetSql.indexOf(")");
                 String str = targetSql.substring(begin+1,last);
                 String[] split = str.split(",");
 
-                for(int i=0;i<columns.size();i++){
+                for(int i=0;i<split.length;i++){
                     RuleColumn ruleColumn = new RuleColumn();
                     ruleColumn.setRuleId(rule.getId());
-                    ruleColumn.setSourceField(columns.get(i));
+                    ruleColumn.setSourceField(columns[i]);
                     ruleColumn.setTargetField(split[i]);
+                    ruleColumn.setExplain(null);
                     lists.add(ruleColumn);
                 }
                 ruleColumnRepositiory.saveAll(lists);
@@ -356,7 +405,7 @@ public class RuleService{
             }
 
             //2.科目辅助核算表保存拆分后的数据
-            String sql2 = "insert into gla_account_element_set (data_id, account_cls, agency, element_code, create_time, create_user, update_time, update_user, is_delete, mof_div_code, acct_set, year, is_enabled, is_required, is_disabled)";
+            String sql2 = "insert into gla_account_element_set (data_id, account_cls, agency, element_code, create_time, create_user, update_time, update_user, is_deleted, mof_div_code, acct_set, year, is_enabled, is_required, is_disabled)values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
             int begin = sql2.indexOf("(");
             int last = sql2.indexOf(")");
             String str = sql2.substring(begin+1,last);
@@ -379,26 +428,93 @@ public class RuleService{
             //3.根据辅助核算对应表更新element_code
             String sql3 = " update gla_account_element_set set element_code = ? where element_code = ? ";
             prest = connection2.prepareStatement(sql3, ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
-            for(Map<String, Object> map1 : mapList){
-                String sourceName = String.valueOf(map1.get("sourceName"));
-                if(!"null".equals(sourceName) && !"".equals(sourceName)){
-                    prest.setObject(1, String.valueOf(map1.get("targetName")));
+            List<PlanAcctColumn> acctColumnData = (List<PlanAcctColumn>) map.get("acctColumnData");
+            for(int j=0;j< acctColumnData.size();j++){
+                PlanAcctColumn pacm = JSON.parseObject(JSON.toJSONString(acctColumnData.get(j)), PlanAcctColumn.class);
+                String sourceName = pacm.getSourceName();
+                if(sourceName!=null && sourceName!=""){
+                    prest.setObject(1, pacm.getTargetName());
                     prest.setObject(2, sourceName);
+                    prest.addBatch();
                 }
-                prest.addBatch();
             }
             prest.executeBatch();
 
             //4.根据辅助核算对应表，将对应值级查询来源库数据插入到目标库
             String lbdm = "";
-            String sql4 = "select * from GL_Fzxzl  where lbdm = '"+lbdm+"' ";
-            List<PlanAcctColumn> acctColumnData = (List<PlanAcctColumn>) map.get("acctColumnData");
-            for (PlanAcctColumn pac : acctColumnData){
+            String sql4 = "";
+            for(int i=0;i< acctColumnData.size();i++){
+                PlanAcctColumn pac = JSON.parseObject(JSON.toJSONString(acctColumnData.get(i)), PlanAcctColumn.class);
                 if(pac.getSourceName()!=null && pac.getSourceName()!="" && "1".equals(pac.getIsSelf())){
                     lbdm = pac.getSourceName().replace("fzdm", "");
-                    List<Map<String, Object>> lbdmList = connectDB.query(connection, sql1);
-                    String sql5 = "INSERT INTO "+pac.getTablecode()+" (data_id, code, name, short_name, whole_name, parent_id, level_no, is_leaf, is_enabled, is_standard, status, type, start_date, end_date, acct_set, agency, data1, data2, data3, data4, data5, data6, data7, data8, data9, mof_div_code, year, is_deleted, update_time, create_time, create_user, update_user)";
+                    sql4 = "select * from GL_Fzxzl  where lbdm = '"+lbdm+"' ";
+                    List<List<String>> palist = new ArrayList<>();
+                    ConnectDB connectDB3 = StrategySimpleFactory.getInstance(plan.getSourceDbType());
+                    Connection connection3 = connectDB3.getConnection(plan.getSourceUsername(), plan.getSourcePwd(), plan.getSourcePort(), plan.getSourceIp(), plan.getSourceDb());
+                    List<Map<String, Object>> lbdmList = connectDB3.query(connection3, sql4);
+                    for(Map<String, Object> sbdmap : lbdmList){
+                        ArrayList<String> slist = new ArrayList<>();
+                        slist.add(UUID.randomUUID().toString().replaceAll("-", ""));//data_id
+                        slist.add(String.valueOf(sbdmap.get("fzdm")));//code
+                        slist.add(String.valueOf(sbdmap.get("fzmc")));//name
+                        slist.add(String.valueOf(sbdmap.get("fzmc")));//short_name
+                        slist.add(String.valueOf(sbdmap.get("fzmc")));//whole_name
+                        slist.add("0");//parent_id
+                        slist.add("1");//level_no
+                        slist.add(String.valueOf(sbdmap.get("fsmx")));//is_leaf
+                        slist.add("1");//is_enabled
+                        slist.add("1");//is_standard
+                        slist.add("1");//status
+                        slist.add("");//type
+                        slist.add("20210818");//start_date
+                        slist.add("20210818");//end_date
+                        slist.add(mofDivCode+"-"+String.valueOf(sbdmap.get("kjnd"))+"-"+"ztbh-"+String.valueOf(sbdmap.get("gsdm")));//acct_set
+                        slist.add(agencyCode);//agency
+                        slist.add("");//data1
+                        slist.add("");//data2
+                        slist.add("");//data3
+                        slist.add("");//data4
+                        slist.add("");//data5
+                        slist.add("");//data6
+                        slist.add("");//data7
+                        slist.add("");//data8
+                        slist.add("");//data9
+                        slist.add(mofDivCode);//mof_div_code
+                        slist.add(String.valueOf(sbdmap.get("kjnd")));//year
+                        slist.add("2");//is_deleted
+                        slist.add(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));//update_time
+                        slist.add(new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));//create_time
+                        slist.add("u8");//create_user
+                        slist.add("g1");//update_user
+                        palist.add(slist);
+                    }
+                    String sqlcolumn5 = "data_id, code, name, short_name, whole_name, parent_id, level_no, is_leaf, is_enabled, is_standard, status, type, start_date, end_date, acct_set, agency, data1, data2, data3, data4, data5, data6, data7, data8, data9, mof_div_code, year, is_deleted, update_time, create_time, create_user, update_user";
+                    String sql5 = "INSERT INTO "+pac.getTablecode()+" ("+sqlcolumn5+")values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+                    ConnectDB connectDB4 = StrategySimpleFactory.getInstance(plan.getTargetDbType());
+                    Connection connection4 = connectDB4.getConnection(plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(), plan.getTargetIp(), plan.getTargetDb());
+                    String sqlselect = "select "+sqlcolumn5+" from "+pac.getTablecode();
+                    String[] split5 = sqlcolumn5.split(",");
+                    Statement statement = connection4.createStatement();//也可以使用PreparedStatement来做
+                    ResultSet rs = statement.executeQuery(sqlselect);//执行sql语句并返还结束
+                    ResultSetMetaData md = rs.getMetaData(); //获得结果集结构信息,元数据
+                    int columnCount = md.getColumnCount();   //获得列数
+                    HashMap<String, String> ms = new HashMap<>();
+                    for (int n = 1; n < columnCount + 1; n++) {
+                        //字段，类型
+                        ms.put(md.getColumnName(n).toUpperCase(), md.getColumnClassName(n));
+                    }
 
+                    prest = connection4.prepareStatement(sql5, ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+                    for(List talist : palist){
+                        for (int j=0;  j< talist.size(); j++) {
+                            Object obj = talist.get(j);
+                            String mscolumn = ms.get(split5[j].trim().toUpperCase());
+                            StringUtil.getTypeConversion(prest,obj,mscolumn,(j+1));
+
+                        }
+                        prest.addBatch();
+                    }
+                    prest.executeBatch();
                 }
             }
 
@@ -417,10 +533,10 @@ public class RuleService{
                 }
             }
         }catch (Exception e){
-
+            e.printStackTrace();
+            return new RespEntity("0","[科目辅助核算]执行失败");
         }
-
-        return new RespEntity("0","执行成功");
+        return new RespEntity("0","[科目辅助核算]执行成功");
     }
 
 

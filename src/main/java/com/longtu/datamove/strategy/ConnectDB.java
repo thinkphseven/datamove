@@ -17,5 +17,5 @@ public interface ConnectDB {
 
     boolean execute(Connection conn, String sql) throws SQLException;
 
-    boolean insertBatch(Connection conn, List<Map<String, Object>> datas, Rule rule) throws SQLException;
+    boolean insertBatch(Connection conn, List<Map<String, Object>> datas, Rule rule,String targetStr) throws SQLException;
 }

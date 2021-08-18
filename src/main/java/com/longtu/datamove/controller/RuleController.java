@@ -102,4 +102,11 @@ public class RuleController {
     public RespEntity savetoRule(@RequestBody Map map) {
         return ruleService.savetoRule(map);
     }
+
+    @ResponseBody
+    @RequestMapping("/subjectToAccount")
+    @OpLog(module = "规则管理",opMethod = "保存辅助核算数据")
+    public RespEntity subjectToAccount(@RequestBody Map map) {
+        return ruleService.subjectToAccount(map);
+    }
 }

@@ -80,7 +80,7 @@ public class PlanService {
                 if (datas != null && datas.size() > 0) {
                     // 插入目标库
                     connectDB = StrategySimpleFactory.getInstance(plan.getTargetDbType());
-                    flag = connectDB.insertBatch(connectDB.getConnection(plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(), plan.getTargetIp(), plan.getTargetDb()), datas, obj);
+                    flag = connectDB.insertBatch(connectDB.getConnection(plan.getTargetUsername(), plan.getTargetPwd(), plan.getTargetPort(), plan.getTargetIp(), plan.getTargetDb()), datas, obj,"");
                 } else {
                     return new RespEntity("0", "来源库未查到任何数据");
                 }

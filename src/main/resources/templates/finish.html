@@ -74,6 +74,31 @@
                         }
                     });
             }
+
+            //执行完规则执行科目辅助核算
+            var _params = {};
+            _params.rule = ruleLists[0];
+            _params.acctForm = acctForm;
+            _params.acctColumnData = acctColumnData;
+
+            $.ajax({
+                type: "POST",
+                async: false,
+                data: JSON.stringify(_params),
+                contentType:"application/json",
+                dataType:"json",
+                url: "/rule/subjectToAccount/",
+                success: function (result) {
+                    if (result.code == '0') {
+                        appfi.list.push(result.msg);
+                    }
+                },
+                error : function(e){  //请求失败，包含具体的错误信息
+                    console.log(e.status);
+                    console.log(e.responseText);
+                }
+            });
+
         }
     }
 </script>

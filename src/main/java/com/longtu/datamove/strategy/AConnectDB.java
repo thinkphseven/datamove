@@ -1,6 +1,7 @@
 package com.longtu.datamove.strategy;
 
 import com.longtu.datamove.entity.Rule;
+import com.longtu.datamove.util.StringUtil;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -26,10 +27,15 @@ public abstract class AConnectDB implements ConnectDB{
             rs = stmt.executeQuery(sql);//执行sql语句并返还结束
             ResultSetMetaData md = rs.getMetaData(); //获得结果集结构信息,元数据
             int columnCount = md.getColumnCount();   //获得列数
+
             while (rs.next()) {//遍历结果集 ，向下一行
                 Map<String, Object> rowData = new HashMap<String, Object>();
                 for (int i = 1; i <= columnCount; i++) {
-                    rowData.put(md.getColumnName(i), rs.getObject(i));
+                    if (String.valueOf(rs.getObject(i)).indexOf("99999999999999999999")==-1) {
+                        rowData.put(md.getColumnName(i), String.valueOf(rs.getObject(i)).replaceAll("99999999999999999999","xtgly"));
+                    }else {
+                        rowData.put(md.getColumnName(i), rs.getObject(i));
+                    }
                 }
                 datas.add(rowData);
             }
@@ -92,8 +98,9 @@ public abstract class AConnectDB implements ConnectDB{
     }
 
     @Override
-    public boolean insertBatch(Connection conn, List<Map<String, Object>> datas, Rule rule) throws SQLException {
+    public boolean insertBatch(Connection conn, List<Map<String, Object>> datas, Rule rule,String targetStr) throws SQLException {
         String targetSql = rule.getTargetSql();
+        targetSql = targetSql.replace("#{fzhs}", targetStr.substring(0, targetStr.length() - 1));
         String sql = targetSql.toLowerCase();//转成小写
         //insert into table(aa,bb,cc);
         String tableName = "";
@@ -115,20 +122,17 @@ public abstract class AConnectDB implements ConnectDB{
 
         try{
             //先执行删除语句  在执行insert
-            String delSql = "delete from "+tableName+" where data_id = ? ";
-//            for (int i= 0; i < length; i++) {
-//                if (i == 0) {
-//                    delSql += " " + columns[i].trim() + " = ? ";
-//                } else {
-//                    delSql += " and " + columns[i].trim() + " = ? ";
-//                }
-//            }
+            String delSql = "delete from "+tableName+" where mof_div_code = ? and agency_code=? ";
+
             PreparedStatement prest = conn.prepareStatement(delSql,ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
             //给delSql问号赋值
             for(Map<String, Object> d : datas){
                 for (int i=1; i <= length; i++) {
-                    if("data_id".equals(columns[i-1].trim().toLowerCase())){
+                    if("mof_div_code".equals(columns[i-1].trim().toLowerCase())){
                         prest.setObject(1, d.get(columns[i-1].trim().toLowerCase()) == null ? d.get(columns[i-1].trim().toUpperCase()) : d.get(columns[i-1].trim().toLowerCase()));
+                    }
+                    if("agency_code".equals(columns[i-1].trim().toLowerCase())){
+                        prest.setObject(2, d.get(columns[i-1].trim().toLowerCase()) == null ? d.get(columns[i-1].trim().toUpperCase()) : d.get(columns[i-1].trim().toLowerCase()));
                     }
                 }
                 prest.addBatch();
@@ -136,13 +140,29 @@ public abstract class AConnectDB implements ConnectDB{
             prest.executeBatch();
 //sql.indexOf("")
 //            sql = sql.replaceAll(sql, "" )
-            //执行插入逻辑
+            String sqlselect = "select "+var3+" from "+tableName;
+            Statement statement = conn.createStatement();//也可以使用PreparedStatement来做
+            ResultSet rs = statement.executeQuery(sqlselect);//执行sql语句并返还结束
+            ResultSetMetaData md = rs.getMetaData(); //获得结果集结构信息,元数据
+            int columnCount = md.getColumnCount();   //获得列数
+            HashMap<String, String> ms = new HashMap<>();
+            for (int i = 1; i < columnCount + 1; i++) {
+                //字段，类型
+                ms.put(md.getColumnName(i).toUpperCase(), md.getColumnClassName(i));
+            }
+                    //执行插入逻辑
             prest = conn.prepareStatement(sql,ResultSet.TYPE_SCROLL_SENSITIVE,ResultSet.CONCUR_READ_ONLY);
+            
             for(Map<String, Object> d : datas){
                 for (int i=1; i <= length; i++) {
-                    prest.setObject(i, d.get(columns[i-1].trim().toLowerCase()) == null ? d.get(columns[i-1].trim().toUpperCase()) : d.get(columns[i-1].trim().toLowerCase()));
+                    if (String.valueOf(d.get(columns[i - 1].trim().toLowerCase())).indexOf("99999999999999999999")==-1) {
+                        Object obj = d.get(columns[i - 1].trim().toLowerCase()) == null ? d.get(columns[i - 1].trim().toUpperCase()) : d.get(columns[i - 1].trim().toLowerCase());
+                        String mscolumn = ms.get(columns[i - 1].trim().toUpperCase());
+                        StringUtil.getTypeConversion(prest,obj,mscolumn,i);
+                    } else {
+                        prest.setObject(i, String.valueOf(d.get(columns[i - 1].trim().toLowerCase())).replaceAll("99999999999999999999","xtgly"));
+                    }
                 }
-
                 prest.addBatch();
             }
             prest.executeBatch();

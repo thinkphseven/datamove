@@ -91,7 +91,7 @@
                                     </el-table-column>
                                     <el-table-column prop="explain" label="说明" width="" header-align="center" align="center">
                                         <template slot-scope="scope">
-                                            <el-input v-model="scope.row.explain" placeholder="说明"></el-input>
+                                            <el-input v-model="scope.row.explain" placeholder="说明" :disabled="true"></el-input>
                                         </template>
                                     </el-table-column>
                                     <el-table-column prop="type" label="状态" width="" header-align="center" align="center" v-if="false">
@@ -100,6 +100,16 @@
                                         </template>
                                     </el-table-column>
 
+                                    <el-table-column prop="tablecode" label="对应表名" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.tablecode" placeholder="对应表名" :disabled="true"></el-input>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column prop="isSelf" label="是否自定义 0公共  1自定义" width="" header-align="center" align="center">
+                                        <template slot-scope="scope">
+                                            <el-input v-model="scope.row.isSelf" placeholder="是否自定义" :disabled="true"></el-input>
+                                        </template>
+                                    </el-table-column>
 
 
                                 </el-table>
